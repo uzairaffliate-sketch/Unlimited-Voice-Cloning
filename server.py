@@ -200,27 +200,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Zaib Access Key Guard Middleware ---
-try:
-    from zaib_auth import validate_key, decrypt_zk_header
-
-    _PROTECTED_PATHS = {"/tts", "/v1/audio/speech", "/upload_reference", "/upload_predefined_voice"}
-
-    class ZaibKeyGuard(BaseHTTPMiddleware):
-        async def dispatch(self, request, call_next):
-            if request.method == "POST" and request.url.path in _PROTECTED_PATHS:
-                raw_key = decrypt_zk_header(request.headers.get("X-ZK", ""))
-                if not await validate_key(raw_key):
-                    return StarletteJSONResponse(
-                        status_code=401,
-                        content={"error": "Unauthorised. Valid access key required."}
-                    )
-            return await call_next(request)
-
-    app.add_middleware(ZaibKeyGuard)
-    logger.info("Zaib key guard active — TTS endpoints are protected.")
-except Exception as _e:
-    logger.warning("zaib_auth not loaded (%s) — key guard disabled.", _e)
+# --- Zaib Access Key Guard Middleware --- (removed: open access)
 
 # --- Static Files and HTML Templates ---
 ui_static_path = Path(__file__).parent / "ui"
