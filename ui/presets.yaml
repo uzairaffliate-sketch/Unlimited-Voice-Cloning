@@ -1,0 +1,59 @@
+# ui/presets.yaml
+# Predefined examples for the TTS User Interface.
+# These presets are designed for a single-speaker TTS engine and provide
+# varied texts for testing quality, intonation, and chunking.
+
+- name: "Noir Detective Monologue"
+  text: |
+    The rain hammered the city like it had a personal vendetta. I sat in my office, the only light coming from a flickering neon sign outside that spelled out "VACANCY" in letters as broken as most of my clients' dreams. She walked in at midnight, the kind of dame that made trouble look like a vacation destination. Said her husband was missing. I knew right then this case would end with either handcuffs or heartbreak. In this town, you learn not to tell the difference. I took a long drag from my cigarette and watched the smoke curl up toward a ceiling that had heard too many confessions. The night was young, but in this business, everything ages fast.
+  params:
+    temperature: 0.75
+    exaggeration: 0.9
+    cfg_weight: 0.6
+    seed: 1947
+    speed_factor: 1.0
+    language: "en"
+
+- name: "Children's Story Narrator"
+  text: |
+    Once upon a time, in a cozy little burrow beneath the oldest oak tree in Whispering Woods, there lived a tiny mouse named Pip. Pip had the softest gray fur, the brightest button eyes, and the most curious little nose that was always twitching at new smells. Every morning, Pip would wake up with the sun, stretch his tiny paws, and wonder what adventures the day would bring. Today was special, because today was the day of the Great Cheese Festival, and Pip had been practicing his crumb-juggling act for weeks! He straightened his tiny red scarf, grabbed his even tinier top hat, and scurried out into the golden morning light. The forest was already buzzing with excitement, and Pip's little heart was buzzing right along with it.
+  params:
+    temperature: 0.8
+    exaggeration: 0.7
+    cfg_weight: 0.5
+    seed: 888
+    speed_factor: 1.0
+    language: "en"
+
+- name: "Motivational Speech"
+  text: |
+    Listen to me. You are standing at the edge of something great. I know it doesn't feel that way right now. I know the voice in your head is listing every reason why you should turn back, play it safe, stay small. But here's what I've learned: greatness never asks for permission. It doesn't wait until you're ready. It shows up at the most inconvenient moments and says, "What are you going to do about it?" Every single person who ever achieved anything extraordinary was once exactly where you are now: uncertain, afraid, wondering if they had what it takes. The difference between them and everyone else? They took the next step anyway. So take the step. Fall down if you have to. Get back up. Your future self is waiting for you to be brave today.
+  params:
+    temperature: 0.8
+    exaggeration: 1.2
+    cfg_weight: 0.55
+    seed: 2025
+    speed_factor: 1.0
+    language: "en"
+
+- name: "Scientific Abstract Reading"
+  text: |
+    Recent advances in neural network architectures have demonstrated remarkable capabilities in natural language understanding and generation. This study presents a comprehensive analysis of transformer-based models, examining their attention mechanisms and their emergent properties at scale. Our findings indicate that model performance scales predictably with compute resources, following established power laws, while exhibiting phase transitions in capability acquisition. We further investigate the role of training data composition and propose a novel preprocessing methodology that improves downstream task performance by approximately eighteen percent across standard benchmarks. These results have significant implications for the development of more efficient and capable language models.
+  params:
+    temperature: 0.7
+    exaggeration: 0.3
+    cfg_weight: 0.5
+    seed: 4096
+    speed_factor: 1.0
+    language: "en"
+
+- name: "Fairy Tale Villain Monologue"
+  text: |
+    You think you've won, don't you? Standing there with your righteous sword and your noble heart. How delightfully naive. I've been playing this game since before your grandmother's grandmother was a whisper in the wind. Every move you've made, every clever plan, every supposed victory — all pieces on my board, my dear hero. You see a villain who lost. I see a centuries-old design finally coming to fruition. The curse you think you've broken? It was merely the lock. And you, sweet child, have just handed me the key. Now, if you'll excuse me, I have a kingdom to reshape in my image. Don't look so surprised. In every story, someone has to play the monster. I simply chose to be the very best.
+  params:
+    temperature: 0.8
+    exaggeration: 1.3
+    cfg_weight: 0.6
+    seed: 666
+    speed_factor: 1.0
+    language: "en"
