@@ -1,5 +1,5 @@
 // ui/script.js
-// Unlimited Voice Cloning by Zaib
+// Unlimited Voice Cloning
 
 // ── Access gate removed — open access ──
 document.addEventListener('DOMContentLoaded', function() {
@@ -653,7 +653,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     function initializeApplication() {
         const preferredTheme = localStorage.getItem('uiTheme') || currentUiState.theme || 'dark';
         applyTheme(preferredTheme);
-        const pageTitle = "Unlimited Voice Cloning by Zaib";
+        const pageTitle = "Unlimited Voice Cloning";
         document.title = pageTitle;
         if (appTitleLink) appTitleLink.textContent = pageTitle;
         if (ttsFormHeader) ttsFormHeader.textContent = `Generate Speech`;
@@ -697,7 +697,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         } catch (error) {
             // Backend not running — render UI in preview/offline mode silently
             if (Object.keys(currentConfig).length === 0) {
-                currentConfig = { ui: { title: "Unlimited Voice Cloning by Zaib" }, generation_defaults: {}, ui_state: {} };
+                currentConfig = { ui: { title: "Unlimited Voice Cloning" }, generation_defaults: {}, ui_state: {} };
                 currentUiState = currentConfig.ui_state;
             }
             initializeApplication();
