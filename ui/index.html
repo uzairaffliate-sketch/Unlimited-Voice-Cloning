@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unlimited Voice Cloning by Zaib</title>
+    <title>Unlimited Voice Cloning</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -16,15 +16,15 @@
     <!-- ═══════════════════════════════════════════════
          WHATSAPP CHANNEL POPUP (shows on every load)
     ═══════════════════════════════════════════════ -->
-    <div id="wa-channel-popup" class="zaib-overlay" style="display:none!important;">
-        <div class="zaib-popup wa-popup">
+    <div id="wa-channel-popup" class="overlay" style="display:none!important;">
+        <div class="popup wa-popup">
             <div class="wa-popup__header">
                 <div class="wa-popup__icon">📢</div>
                 <h2 class="wa-popup__title">Join Our WhatsApp Channel</h2>
                 <p class="wa-popup__sub">Get updates, new features & support — all in one place.</p>
             </div>
             <div class="wa-popup__body">
-                <p>Stay connected with <strong>Unlimited Voice Cloning by Zaib</strong> for:</p>
+                <p>Stay connected with <strong>Unlimited Voice Cloning</strong> for:</p>
                 <ul class="wa-popup__list">
                     <li>✅ Latest updates &amp; new voice models</li>
                     <li>✅ Priority support &amp; tips</li>
@@ -32,11 +32,11 @@
                 </ul>
             </div>
             <div class="wa-popup__actions">
-                <a href="https://whatsapp.com/channel/0029VbBY6cq002T07EkzJc10" target="_blank" class="zaib-btn zaib-btn--wa" id="wa-join-btn">
+                <a href="https://whatsapp.com/channel/0029VbBY6cq002T97EkzJc10" target="_blank" class="btn btn--wa" id="wa-join-btn">
                     <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                     Join WhatsApp Channel
                 </a>
-                <button class="zaib-btn zaib-btn--ghost" id="wa-popup-close">Maybe Later</button>
+                <button class="btn btn--ghost" id="wa-popup-close">Maybe Later</button>
             </div>
         </div>
     </div>
@@ -44,11 +44,11 @@
     <!-- ═══════════════════════════════════════════════
          ACCESS KEY GATE (shown if no valid key)
     ═══════════════════════════════════════════════ -->
-    <div id="access-gate" class="zaib-overlay" style="display:none!important;">
-        <div class="zaib-popup gate-popup">
+    <div id="access-gate" class="overlay" style="display:none!important;">
+        <div class="popup gate-popup">
             <div class="gate-popup__brand">
                 <div class="gate-popup__logo">🎙️</div>
-                <h1 class="gate-popup__title">Unlimited Voice Cloning by Zaib</h1>
+                <h1 class="gate-popup__title">Unlimited Voice Cloning</h1>
                 <p class="gate-popup__tagline">AI Voice Cloning — 23 Languages — Lifetime Access</p>
                 <div class="gate-popup__price">💰 $5 &nbsp;/&nbsp; 1500 PKR — One-Time Lifetime</div>
             </div>
@@ -62,10 +62,10 @@
             <!-- TAB: Enter Key -->
             <div class="gate-panel" id="tab-enter-key">
                 <p class="gate-panel__hint">Already purchased? Enter your access key below.</p>
-                <div id="gate-error" class="zaib-alert zaib-alert--error" style="display:none;"></div>
-                <div id="gate-success" class="zaib-alert zaib-alert--success" style="display:none;"></div>
-                <input type="text" id="access-key-input" class="zaib-input" placeholder="ZAIB-XXXXXX-XXXXXX" autocomplete="off" spellcheck="false">
-                <button id="verify-key-btn" class="zaib-btn zaib-btn--primary" style="width:100%;margin-top:12px;">
+                <div id="gate-error" class="alert alert--error" style="display:none;"></div>
+                <div id="gate-success" class="alert alert--success" style="display:none;"></div>
+                <input type="text" id="access-key-input" class="input" placeholder="LAIB-XXXXXX-XXXXXX" autocomplete="off" spellcheck="false">
+                <button id="verify-key-btn" class="btn btn--primary" style="width:100%;margin-top:12px;">
                     <span id="verify-btn-text">✅ Verify & Activate</span>
                 </button>
                 <p style="font-size:12px;color:#888;margin-top:12px;text-align:center;">
@@ -110,37 +110,37 @@
                                 <span class="pk-badge pk-badge--np">NP</span>
                                 <div>
                                     <div class="pk-row__name">NayaPay</div>
-                                    <div class="pk-row__num">0370-5568511</div>
+                                    <div class="pk-row__num">0300-000000</div>
                                 </div>
                             </div>
-                            <button class="copy-pill" data-copy="03705568511">Copy</button>
+                            <button class="copy-pill" data-copy="000000000">Copy</button>
                         </div>
                         <div class="pk-row">
                             <div class="pk-row__left">
                                 <span class="pk-badge pk-badge--sp">SP</span>
                                 <div>
                                     <div class="pk-row__name">SadaPay</div>
-                                    <div class="pk-row__num">0301-5201419</div>
+                                    <div class="pk-row__num">0300-0000000</div>
                                 </div>
                             </div>
-                            <button class="copy-pill" data-copy="03015201419">Copy</button>
+                            <button class="copy-pill" data-copy="00000000">Copy</button>
                         </div>
                         <div class="pk-row pk-row--bank">
                             <div class="pk-row__left">
                                 <span class="pk-badge pk-badge--bk">🏦</span>
                                 <div>
                                     <div class="pk-row__name">Meezan Bank</div>
-                                    <div class="pk-row__iban">PK33MEZN0000300114818609</div>
+                                    <div class="pk-row__iban">PK33MEZN00000000000000</div>
                                 </div>
                             </div>
-                            <button class="copy-pill" data-copy="PK33MEZN0000300114818609">Copy</button>
+                            <button class="copy-pill" data-copy="PK33MEZN000000000000">Copy</button>
                         </div>
                     </div>
 
                     <div class="trx-form">
                         <label class="trx-form__label">Transaction ID <span class="trx-form__req">*required</span></label>
-                        <input type="text" id="trx-id-pk" class="zaib-input" placeholder="e.g. EP123456789012" autocomplete="off">
-                        <button id="verify-payment-btn" class="zaib-btn zaib-btn--wa" style="width:100%;margin-top:10px;">
+                        <input type="text" id="trx-id-pk" class="input" placeholder="e.g. EP123426789012" autocomplete="off">
+                        <button id="verify-payment-btn" class="btn btn--wa" style="width:100%;margin-top:10px;">
                             <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="vertical-align:middle;margin-right:6px;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                             Send TRX ID on WhatsApp
                         </button>
@@ -160,7 +160,7 @@
 
                     <div class="crypto-addr-box">
                         <div class="crypto-addr-box__network" id="crypto-network-label">USDT TRC20 — TRON Network</div>
-                        <div class="crypto-addr-box__addr" id="crypto-addr-display">TMuiipRzVV2XpDMzJFTxEDDgJw9rZ6tAa2</div>
+                        <div class="crypto-addr-box__addr" id="crypto-addr-display">TMuiipRzSV2XpDMzJFTxEDDgJw9rZ6tAa2</div>
                         <button class="crypto-addr-box__copy" id="copy-crypto-addr">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                             <span id="copy-addr-label">Copy Address</span>
@@ -170,8 +170,8 @@
 
                     <div class="trx-form">
                         <label class="trx-form__label">Transaction Hash <span class="trx-form__req">*required</span></label>
-                        <input type="text" id="trx-hash-intl" class="zaib-input" placeholder="Paste your TX Hash here" autocomplete="off">
-                        <button id="verify-payment-intl-btn" class="zaib-btn zaib-btn--wa" style="width:100%;margin-top:10px;">
+                        <input type="text" id="trx-hash-intl" class="input" placeholder="Paste your TX Hash here" autocomplete="off">
+                        <button id="verify-payment-intl-btn" class="btn btn--wa" style="width:100%;margin-top:10px;">
                             <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="vertical-align:middle;margin-right:6px;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                             Send Hash on WhatsApp
                         </button>
@@ -179,10 +179,10 @@
                 </div>
 
                 <div class="get-access__contact">
-                    <a href="https://wa.me/923705568511" target="_blank" class="zaib-btn zaib-btn--ghost" style="width:100%;">
-                        📞 WhatsApp: +92 370 5568511
+                    <a href="https://wa.me/923000000000" target="_blank" class="btn btn--ghost" style="width:100%;">
+                        📞 WhatsApp: +92 300 0000000
                     </a>
-                    <a href="https://whatsapp.com/channel/0029VbBY6cq002T07EkzJc10" target="_blank" class="zaib-btn zaib-btn--ghost" style="width:100%;margin-top:8px;">
+                    <a href="https://whatsapp.com/channel/0029VbBY6cq062T07EkzJc10" target="_blank" class="btn btn--ghost" style="width:100%;margin-top:8px;">
                         📢 Join WhatsApp Channel for Updates
                     </a>
                 </div>
@@ -199,7 +199,7 @@
             <div class="container">
                 <div class="navbar__inner">
                     <div class="navbar__brand">
-                        <a href="/" id="app-title-link" class="navbar__title">Unlimited Voice Cloning by Zaib</a>
+                        <a href="/" id="app-title-link" class="navbar__title">Unlimited Voice Cloning</a>
                         <div id="model-indicator" class="hidden">
                             <span id="model-badge" class="model-badge">
                                 <span id="model-badge-icon" class="model-badge__indicator"></span>
@@ -209,7 +209,7 @@
                     </div>
                     <div class="navbar__actions">
                         <a href="/docs" target="_blank" class="navbar__link">API Docs</a>
-                        <a href="https://whatsapp.com/channel/0029VbBY6cq002T07EkzJc10" target="_blank" class="navbar__link navbar__link--wa" title="Join WhatsApp Channel">
+                        <a href="https://whatsapp.com/channel/0029VbBY6cq052T07EkzJc10" target="_blank" class="navbar__link navbar__link--wa" title="Join WhatsApp Channel">
                             <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" style="display:inline;vertical-align:middle;margin-right:4px;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                             Channel
                         </a>
@@ -589,11 +589,11 @@
             <div class="container">
                 <div class="footer__content">
                     <span class="footer__link">
-                        <a href="https://github.com/shahzaib091ali-ops/Unlimited-Voice-Cloning-by-Zaib" target="_blank" rel="noopener noreferrer">
-                            Unlimited Voice Cloning by Zaib
+                        <a href="https://github.com/uzairaffliate-sketch/Unlimited-Voice-Cloning" target="_blank" rel="noopener noreferrer">
+                            Unlimited Voice Cloning
                         </a>
                         &nbsp;|&nbsp;
-                        <a href="https://whatsapp.com/channel/0029VbBY6cq002T07EkzJc10" target="_blank" rel="noopener noreferrer" style="color:#25D366;font-weight:700;">
+                        <a href="https://whatsapp.com/channel/0029VbBY3cq002T07EkzJc10" target="_blank" rel="noopener noreferrer" style="color:#25D366;font-weight:700;">
                             📢 Join WhatsApp Channel
                         </a>
                     </span>
