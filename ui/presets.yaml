@@ -68,3 +68,14 @@
     seed: 2026
     speed_factor: 1.0
     language: "en"
+
+  - name: "POV Selfie Rant (Political)"
+  text: |
+    Can somebody tell me... what the psychology is behind going on national television and—like, a live broadcast—and just calling a Jewish politician a Nazi collaborator? Like, ten straight minutes of just... doubling down. With zero proof. You actually have to sit there and watch the whole segment, and you're just thinking, 'Man, is he ever gonna stop?' He's just rambling on about his—his supposed moral high ground, I guess, his pretend principles. And then his family's principles. And how he's so right. Who cares? I mean, I had it playing on low volume driving back from lunch, getting ready to go back to work, and I'm just sitting there going... I don't get it. Are they trying to wear you down? Like, so by the end of the interview you just give up and accept it because he wasted your time? Who can tell me, for the love of God, what the actual strategy is here? Because that's a political scheme I will never, ever understand. Do better.
+  params:
+    temperature: 0.78
+    exaggeration: 0.45
+    cfg_weight: 0.5
+    seed: 3024
+    speed_factor: 1.05
+    language: "en"
