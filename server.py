@@ -1067,6 +1067,11 @@ async def custom_tts_endpoint(
 
                 audio_np = audio_tensor.cpu().numpy().squeeze().astype(np.float32)
 
+                # Peak normalize each chunk for consistent loud volume
+                _chunk_peak = np.abs(audio_np).max()
+                if _chunk_peak > 0.001:
+                    audio_np = audio_np * (0.95 / _chunk_peak)
+
                 if not header_sent:
                     yield _create_wav_header(chunk_sr)
                     header_sent = True
@@ -1285,12 +1290,14 @@ async def custom_tts_endpoint(
         # --- Ensure float32 dtype for all code paths ---
         final_audio_np = final_audio_np.astype(np.float32, copy=False)
 
-        # --- Normalize to prevent clipping ---
+        # --- Peak normalize to consistent loud volume ---
+        # Always normalize (not just when clipping) so low-amplitude TTS output
+        # is boosted to a consistent level regardless of reference voice loudness.
         peak_amplitude = np.abs(final_audio_np).max()
-        if peak_amplitude > PEAK_NORMALIZE_THRESHOLD:
+        if peak_amplitude > 0.001:  # skip near-silence
             final_audio_np = final_audio_np * (PEAK_NORMALIZE_TARGET / peak_amplitude)
-            logger.warning(
-                f"Audio normalized to prevent clipping (peak was {peak_amplitude:.3f})"
+            logger.info(
+                f"Audio peak-normalized to {PEAK_NORMALIZE_TARGET} (peak was {peak_amplitude:.3f})"
             )
 
         perf_monitor.record("Audio chunks stitched")
@@ -1514,9 +1521,9 @@ async def openai_speech_endpoint(request: OpenAISpeechRequest):
                 f"OpenAI speech: stitched {len(all_audio_segments_np)} chunks with {CROSSFADE_MS}ms crossfades"
             )
 
-        # Normalize to prevent clipping
+        # Peak normalize to consistent loud volume
         peak = np.abs(final_audio_np).max()
-        if peak > 0.99:
+        if peak > 0.001:
             final_audio_np = final_audio_np * (0.95 / peak)
 
         encoded_audio = utils.encode_audio(
