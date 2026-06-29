@@ -57,3 +57,14 @@
     seed: 666
     speed_factor: 1.0
     language: "en"
+
+- name: "Raw Political Commentary"
+  text: |
+    He goes on national television and—honestly, it’s hard to even process the arrogance here—he just flat out says it. He sat there while the host gave him three different chances to just admit he misspoke, to do the bare minimum of damage control. He didn't. He refused. I—I thought it was a joke honestly. You compare a guy to a concentration camp guard, and when you get pressed for the proof? Crickets. Nothing. You don't just accidentally say something like that. It certainly looked like he was scrambling, just throwing out these wild accusations and hoping one of them sticks. This isn’t standard cable news drama. People are actually watching this and—and we're supposed to just accept this as normal?
+  params:
+    temperature: 0.72
+    exaggeration: 0.35
+    cfg_weight: 0.5
+    seed: 2026
+    speed_factor: 1.0
+    language: "en"
