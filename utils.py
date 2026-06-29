@@ -326,7 +326,10 @@ def encode_audio(
 
         elif output_format == "wav":
             # WAV typically uses int16 for broader compatibility.
-            # Clip audio to [-1.0, 1.0] before converting to int16 to prevent overflow.
+            # Peak normalize to -0.45 dBFS before clipping to ensure consistent loud output.
+            _peak_wav = np.max(np.abs(audio_array))
+            if _peak_wav > 0.001:
+                audio_array = audio_array / _peak_wav * 0.95
             audio_clipped = np.clip(audio_array, -1.0, 1.0)
             audio_int16 = (audio_clipped * 32767).astype(np.int16)
             audio_to_write = audio_int16  # Use the int16 version for WAV
@@ -339,6 +342,10 @@ def encode_audio(
             )
 
         elif output_format == "mp3":
+            # Peak normalize to -0.45 dBFS before clipping to ensure consistent loud output.
+            _peak_mp3 = np.max(np.abs(audio_array))
+            if _peak_mp3 > 0.001:
+                audio_array = audio_array / _peak_mp3 * 0.95
             audio_clipped = np.clip(audio_array, -1.0, 1.0)
             audio_int16 = (audio_clipped * 32767).astype(np.int16)
             audio_segment = AudioSegment(
@@ -412,6 +419,11 @@ def save_audio_to_file(
                 audio_array = audio_array.astype(np.float32) / max_val
             else:
                 audio_array = audio_array.astype(np.float32)
+
+        # Peak normalize to -0.45 dBFS for consistent loud output.
+        _peak_save = np.max(np.abs(audio_array))
+        if _peak_save > 0.001:
+            audio_array = audio_array / _peak_save * 0.95
 
         audio_clipped = np.clip(audio_array, -1.0, 1.0)
         audio_int16 = (audio_clipped * 32767).astype(np.int16)
