@@ -51,7 +51,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "ssl_keyfile": None,  # Path to SSL private key file for HTTPS. None = HTTP only.
     },
     "model": {  # Added section for model source configuration
-        "repo_id": "chatterbox-turbo",  # UPDATED: Default to Turbo model
+        "repo_id": "chatterbox-original",  # UPDATED: Default to Original model
     },
     "tts_engine": {
         "device": "auto",  # TTS processing device: 'auto', 'cuda', 'mps', or 'cpu'.
