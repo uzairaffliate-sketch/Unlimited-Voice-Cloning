@@ -79,3 +79,22 @@
     seed: 3024
     speed_factor: 1.05
     language: "en"
+
+- name: "Spanish Political Commentary"
+  text: |
+    El diecisiete de agosto del dos mil veintiséis venció el acuerdo de sesenta días entre Estados Unidos e Irán. Sesenta días para negociar. Y nada. No hubo acuerdo.
+
+    Ese mismo día, Trump se paró en la Oficina Oval y le dijo a los periodistas que Irán quería un trato, pero que no aceptaba los términos necesarios. Y cuáles eran esos términos, según él. Pues que Irán nunca tuviera armas nucleares. Esa es la línea que repite. Esa es la historia que quiere que creamos: que todo este conflicto gira en torno a evitar que Irán tenga la bomba.
+
+    Pero resulta que, justamente ese mismo día, Muhammad Bagher Ghalibaf —que es el presidente del parlamento iraní y también su negociador principal— subió a X y publicó lo que Irán realmente quiere antes de reabrir el estrecho de Ormuz. Y ojo con estos cuatro puntos, porque son clave para entender por qué este conflicto no tiene solución rápida.
+
+    Primero: que Estados Unidos levante por completo el bloqueo naval a los puertos iraníes. Segundo: que liberen de inmediato todos los activos congelados del país. Tercero: que saquen todas las sanciones al petróleo. Y cuarto: que paren todas las operaciones militares contra Irán, en todas las frentes.
+
+    ¿Ven la diferencia? Trump habla de armas nucleares. Irán habla de bloqueos, dinero, sanciones y tropas. No están hablando del mismo tema. No están negociando el mismo asunto. Cada gobierno le está contando su versión a su gente, y lo llaman “diplomacia”.
+  params:
+    temperature: 0.82
+    exaggeration: 0.5
+    cfg_weight: 1.2
+    seed: 2025
+    speed_factor: 1.0
+    language: "es"
