@@ -7,6 +7,7 @@ import os
 import io
 import asyncio
 import struct
+import zipfile
 import logging
 import logging.handlers  # For RotatingFileHandler
 import shutil
@@ -17,7 +18,7 @@ import numpy as np
 import librosa  # For potential direct use if needed, though utils.py handles most
 from pathlib import Path
 from contextlib import asynccontextmanager
-from typing import Optional, List, Dict, Any, Literal
+from typing import Optional, List, Dict, Any, Literal, Tuple
 import webbrowser  # For automatic browser opening
 import threading  # For automatic browser opening
 
@@ -187,7 +188,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=get_ui_title(),
     description="Text-to-Speech server with advanced UI and API capabilities.",
-    version="2.0.2",  # Version Bump
+    version="2.1.0",  # Version Bump: batch TTS (multi .txt -> ZIP)
     lifespan=lifespan,
 )
 
@@ -867,6 +868,74 @@ async def upload_predefined_voice_endpoint(files: List[UploadFile] = File(...)):
 # --- TTS Generation Endpoint ---
 
 
+def _resolve_audio_prompt_path(
+    voice_mode: str,
+    predefined_voice_id: Optional[str],
+    reference_audio_filename: Optional[str],
+) -> Optional[Path]:
+    """
+    Resolves the voice conditioning audio file for the given voice mode.
+
+    Shared by the single-script /tts endpoint and the batch TTS worker so both
+    use identical voice resolution (and therefore identical voice output).
+
+    Raises:
+        HTTPException: 400/404 when the voice selection is invalid or missing.
+    """
+    audio_prompt_path_for_engine: Optional[Path] = None
+    if voice_mode == "predefined":
+        if not predefined_voice_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Missing 'predefined_voice_id' for 'predefined' voice mode.",
+            )
+        voices_dir = get_predefined_voices_path(ensure_absolute=True)
+        try:
+            potential_path = utils.safe_resolve_within(voices_dir, predefined_voice_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid predefined voice ID.")
+        if not potential_path.is_file():
+            logger.error(f"Predefined voice file not found: {potential_path}")
+            raise HTTPException(
+                status_code=404,
+                detail=f"Predefined voice file '{predefined_voice_id}' not found.",
+            )
+        audio_prompt_path_for_engine = potential_path
+        logger.info(f"Using predefined voice: {predefined_voice_id}")
+
+    elif voice_mode == "clone":
+        if not reference_audio_filename:
+            raise HTTPException(
+                status_code=400,
+                detail="Missing 'reference_audio_filename' for 'clone' voice mode.",
+            )
+        ref_dir = get_reference_audio_path(ensure_absolute=True)
+        try:
+            potential_path = utils.safe_resolve_within(ref_dir, reference_audio_filename)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid reference audio filename.")
+        if not potential_path.is_file():
+            logger.error(
+                f"Reference audio file for cloning not found: {potential_path}"
+            )
+            raise HTTPException(
+                status_code=404,
+                detail=f"Reference audio file '{reference_audio_filename}' not found.",
+            )
+        max_dur = config_manager.get_int("audio_output.max_reference_duration_sec", 30)
+        is_valid, msg = utils.validate_reference_audio(potential_path, max_dur)
+        if not is_valid:
+            raise HTTPException(
+                status_code=400, detail=f"Invalid reference audio: {msg}"
+            )
+        audio_prompt_path_for_engine = potential_path
+        logger.info(
+            f"Using reference audio for cloning: {reference_audio_filename}"
+        )
+
+    return audio_prompt_path_for_engine
+
+
 @app.post(
     "/tts",
     tags=["TTS Generation"],
@@ -922,56 +991,11 @@ async def custom_tts_endpoint(
     )
     logger.debug(f"Input text (first 100 chars): '{request.text[:100]}...'")
 
-    audio_prompt_path_for_engine: Optional[Path] = None
-    if request.voice_mode == "predefined":
-        if not request.predefined_voice_id:
-            raise HTTPException(
-                status_code=400,
-                detail="Missing 'predefined_voice_id' for 'predefined' voice mode.",
-            )
-        voices_dir = get_predefined_voices_path(ensure_absolute=True)
-        try:
-            potential_path = utils.safe_resolve_within(voices_dir, request.predefined_voice_id)
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid predefined voice ID.")
-        if not potential_path.is_file():
-            logger.error(f"Predefined voice file not found: {potential_path}")
-            raise HTTPException(
-                status_code=404,
-                detail=f"Predefined voice file '{request.predefined_voice_id}' not found.",
-            )
-        audio_prompt_path_for_engine = potential_path
-        logger.info(f"Using predefined voice: {request.predefined_voice_id}")
-
-    elif request.voice_mode == "clone":
-        if not request.reference_audio_filename:
-            raise HTTPException(
-                status_code=400,
-                detail="Missing 'reference_audio_filename' for 'clone' voice mode.",
-            )
-        ref_dir = get_reference_audio_path(ensure_absolute=True)
-        try:
-            potential_path = utils.safe_resolve_within(ref_dir, request.reference_audio_filename)
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid reference audio filename.")
-        if not potential_path.is_file():
-            logger.error(
-                f"Reference audio file for cloning not found: {potential_path}"
-            )
-            raise HTTPException(
-                status_code=404,
-                detail=f"Reference audio file '{request.reference_audio_filename}' not found.",
-            )
-        max_dur = config_manager.get_int("audio_output.max_reference_duration_sec", 30)
-        is_valid, msg = utils.validate_reference_audio(potential_path, max_dur)
-        if not is_valid:
-            raise HTTPException(
-                status_code=400, detail=f"Invalid reference audio: {msg}"
-            )
-        audio_prompt_path_for_engine = potential_path
-        logger.info(
-            f"Using reference audio for cloning: {request.reference_audio_filename}"
-        )
+    audio_prompt_path_for_engine = _resolve_audio_prompt_path(
+        request.voice_mode,
+        request.predefined_voice_id,
+        request.reference_audio_filename,
+    )
 
     perf_monitor.record("Parameters and voice path resolved")
 
@@ -1413,6 +1437,398 @@ async def custom_tts_endpoint(
     return StreamingResponse(
         io.BytesIO(encoded_audio_bytes), media_type=media_type, headers=headers
     )
+
+
+# =====================================================================
+# Batch TTS — many .txt files in, one audio file per .txt out (as a ZIP)
+# =====================================================================
+# Flow:
+#   POST /api/batch_tts            -> starts a background job, returns {job_id, total}
+#   GET  /api/batch_tts/status/{id} -> {status, total, completed, failed, ...} (poll this)
+#   GET  /api/batch_tts/download/{id} -> the ZIP file once status == "done"
+#
+# Every .txt file is synthesized with the SAME voice, SAME seed and SAME
+# generation parameters, so the per-file audios sound like one continuous
+# read (exactly like the internal chunk loop of /tts, just without stitching).
+# Audio filename = original .txt filename with only the extension changed,
+# e.g. "part 1.txt" -> "part 1.mp3".
+
+_batch_jobs: Dict[str, Dict[str, Any]] = {}
+_batch_jobs_lock = threading.Lock()
+BATCH_JOB_TTL_SECONDS = 12 * 3600  # finished jobs (and their files) live 12h
+BATCH_MAX_FILES = 2000
+
+
+def _batch_job_dir(job_id: str) -> Path:
+    """Directory holding a batch job's per-file audios and final ZIP."""
+    return get_output_path(ensure_absolute=True) / "batch_tts" / job_id
+
+
+def _batch_audio_filename(txt_filename: str, output_format: str) -> str:
+    """
+    Maps a .txt filename to its audio filename: same name, only the
+    extension changes. Spaces/unicode are preserved ("part 1.txt" ->
+    "part 1.mp3"). Only path separators are stripped for safety.
+    """
+    base = Path(txt_filename).name.strip()
+    if base.lower().endswith(".txt"):
+        stem = base[:-4]
+    else:
+        stem = os.path.splitext(base)[0]
+    stem = stem.strip().replace("/", "").replace("\\", "").replace("\x00", "")
+    stem = stem.strip(" .")
+    if not stem:
+        stem = f"part_{uuid.uuid4().hex[:8]}"
+    if len(stem) > 100:
+        stem = stem[:100]
+    return f"{stem}.{output_format}"
+
+
+def _purge_old_batch_jobs() -> None:
+    """Removes batch jobs older than BATCH_JOB_TTL_SECONDS (state + files)."""
+    now = time.time()
+    stale: List[str] = []
+    with _batch_jobs_lock:
+        for jid, job in list(_batch_jobs.items()):
+            if now - job.get("created_at", now) > BATCH_JOB_TTL_SECONDS:
+                stale.append(jid)
+                _batch_jobs.pop(jid, None)
+    for jid in stale:
+        try:
+            shutil.rmtree(_batch_job_dir(jid), ignore_errors=True)
+        except Exception:
+            pass
+        logger.info(f"Purged expired batch TTS job: {jid}")
+
+
+def _run_batch_tts_job(
+    job_id: str,
+    file_payloads: List[Tuple[str, str]],
+    params: Dict[str, Any],
+) -> None:
+    """
+    Background worker for a batch TTS job. Synthesizes one audio file per
+    .txt payload with identical voice/seed/params, then zips them.
+    Runs in a dedicated thread so the server stays responsive.
+    """
+
+    def _set(**kwargs: Any) -> None:
+        with _batch_jobs_lock:
+            job = _batch_jobs.get(job_id)
+            if job is not None:
+                job.update(kwargs)
+
+    try:
+        _set(status="processing", current_filename="")
+
+        # Same voice resolution as /tts -> identical voice output.
+        audio_prompt_path = _resolve_audio_prompt_path(
+            params["voice_mode"],
+            params.get("predefined_voice_id"),
+            params.get("reference_audio_filename"),
+        )
+        audio_prompt_str = str(audio_prompt_path) if audio_prompt_path else None
+
+        job_dir = _batch_job_dir(job_id)
+        audio_dir = job_dir / "audio"
+        audio_dir.mkdir(parents=True, exist_ok=True)
+
+        output_format = params.get("output_format") or "mp3"
+        if output_format not in ("wav", "opus", "mp3"):
+            output_format = "mp3"
+        target_sr = get_audio_sample_rate()
+        temperature = params.get("temperature", get_gen_default_temperature())
+        exaggeration = params.get("exaggeration", get_gen_default_exaggeration())
+        cfg_weight = params.get("cfg_weight", get_gen_default_cfg_weight())
+        seed = params.get("seed", get_gen_default_seed())
+        speed_factor = params.get("speed_factor", get_gen_default_speed_factor())
+        language = params.get("language", get_gen_default_language())
+
+        total = len(file_payloads)
+        completed = 0
+        failed: List[Dict[str, str]] = []
+        made: List[str] = []
+
+        for original_name, text in file_payloads:
+            _set(current_filename=original_name)
+            try:
+                if not text.strip():
+                    raise ValueError("File is empty or contains no readable text.")
+                logger.info(
+                    f"Batch TTS [{job_id}]: synthesizing file "
+                    f"{completed + 1}/{total}: {original_name}"
+                )
+
+                # One synthesize call per file (no internal splitting: the
+                # user already split the script into these parts).
+                audio_tensor, chunk_sr = engine.synthesize(
+                    text=text,
+                    audio_prompt_path=audio_prompt_str,
+                    temperature=temperature,
+                    exaggeration=exaggeration,
+                    cfg_weight=cfg_weight,
+                    seed=seed,
+                    language=language,
+                )
+                if audio_tensor is None or chunk_sr is None:
+                    raise RuntimeError("TTS engine returned no audio.")
+
+                if speed_factor != 1.0:
+                    audio_tensor, _ = utils.apply_speed_factor(
+                        audio_tensor, chunk_sr, speed_factor
+                    )
+
+                audio_np = audio_tensor.cpu().numpy().squeeze().astype(np.float32)
+
+                # Peak-normalize every file to the same level (0.95), like the
+                # single-script path does, so loudness stays consistent and the
+                # parts feel like one continuous read.
+                peak = float(np.abs(audio_np).max()) if audio_np.size else 0.0
+                if peak > 0.001:
+                    audio_np = audio_np * (0.95 / peak)
+
+                encoded = utils.encode_audio(
+                    audio_array=audio_np,
+                    sample_rate=chunk_sr,
+                    output_format=output_format,
+                    target_sample_rate=target_sr,
+                )
+                if not encoded or len(encoded) < 100:
+                    raise RuntimeError(
+                        f"Failed to encode audio to {output_format}."
+                    )
+
+                out_name = _batch_audio_filename(original_name, output_format)
+                dest = audio_dir / out_name
+                n = 2
+                while dest.exists():  # two txt files mapping to the same name
+                    dest = audio_dir / f"{dest.stem} ({n}){dest.suffix}"
+                    n += 1
+                with open(dest, "wb") as f:
+                    f.write(encoded)
+                made.append(dest.name)
+
+            except Exception as e_file:
+                logger.error(
+                    f"Batch TTS [{job_id}]: failed '{original_name}': {e_file}",
+                    exc_info=True,
+                )
+                failed.append({"filename": original_name, "error": str(e_file)})
+
+            completed += 1
+            _set(completed=completed, failed=failed)
+
+        if not made:
+            _set(
+                status="error",
+                current_filename="",
+                error_detail="All files failed. See the 'failed' list for details.",
+            )
+            return
+
+        # Build the single ZIP download.
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        zip_name = utils.sanitize_filename(f"batch_tts_{timestamp}.zip")
+        zip_path = job_dir / zip_name
+        with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            for name in sorted(made):
+                zf.write(audio_dir / name, arcname=name)
+
+        _set(
+            status="done",
+            current_filename="",
+            zip_filename=zip_name,
+            succeeded=len(made),
+            failed=failed,
+        )
+        logger.info(
+            f"Batch TTS [{job_id}] done: {len(made)} succeeded, "
+            f"{len(failed)} failed. ZIP: {zip_path}"
+        )
+
+    except HTTPException as he:
+        _set(status="error", current_filename="", error_detail=str(he.detail))
+    except Exception as e:
+        logger.error(f"Batch TTS [{job_id}] worker crashed: {e}", exc_info=True)
+        _set(status="error", current_filename="", error_detail=str(e))
+
+
+@app.post(
+    "/api/batch_tts",
+    tags=["Batch TTS"],
+    summary="Start a batch TTS job from multiple .txt files",
+    responses={
+        200: {"description": "Batch job started; returns job_id for polling."},
+        400: {"model": ErrorResponse, "description": "Invalid request."},
+        503: {"model": ErrorResponse, "description": "TTS engine not loaded."},
+    },
+)
+async def batch_tts_start_endpoint(
+    files: List[UploadFile] = File(...),
+    voice_mode: str = Form("predefined"),
+    predefined_voice_id: Optional[str] = Form(None),
+    reference_audio_filename: Optional[str] = Form(None),
+    temperature: Optional[float] = Form(None),
+    exaggeration: Optional[float] = Form(None),
+    cfg_weight: Optional[float] = Form(None),
+    seed: Optional[int] = Form(None),
+    speed_factor: Optional[float] = Form(None),
+    language: Optional[str] = Form(None),
+    output_format: str = Form("mp3"),
+):
+    """
+    Starts a background batch TTS job. Upload many pre-split .txt files;
+    each becomes its own audio file (same voice/seed/params for all),
+    packaged into one ZIP for single-click download.
+    """
+    _purge_old_batch_jobs()
+
+    if not engine.MODEL_LOADED:
+        raise HTTPException(
+            status_code=503,
+            detail="TTS engine model is not currently loaded or available.",
+        )
+    if not files:
+        raise HTTPException(status_code=400, detail="No files uploaded.")
+    if len(files) > BATCH_MAX_FILES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Too many files (max {BATCH_MAX_FILES} per batch).",
+        )
+    if voice_mode not in ("predefined", "clone"):
+        raise HTTPException(
+            status_code=400, detail="voice_mode must be 'predefined' or 'clone'."
+        )
+    if output_format not in ("wav", "opus", "mp3"):
+        output_format = "mp3"
+
+    payloads: List[Tuple[str, str]] = []
+    for f in files:
+        name = (f.filename or "").strip()
+        raw = await f.read()
+        await f.close()
+        if not name.lower().endswith(".txt"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Only .txt files are allowed (rejected '{name}').",
+            )
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            text = raw.decode("utf-8", errors="replace")
+        payloads.append((Path(name).name, text))
+
+    if not payloads:
+        raise HTTPException(status_code=400, detail="No valid .txt files received.")
+
+    job_id = uuid.uuid4().hex[:12]
+    params: Dict[str, Any] = {
+        "voice_mode": voice_mode,
+        "predefined_voice_id": predefined_voice_id,
+        "reference_audio_filename": reference_audio_filename,
+        "temperature": (
+            temperature if temperature is not None else get_gen_default_temperature()
+        ),
+        "exaggeration": (
+            exaggeration if exaggeration is not None else get_gen_default_exaggeration()
+        ),
+        "cfg_weight": (
+            cfg_weight if cfg_weight is not None else get_gen_default_cfg_weight()
+        ),
+        "seed": seed if seed is not None else get_gen_default_seed(),
+        "speed_factor": (
+            speed_factor if speed_factor is not None else get_gen_default_speed_factor()
+        ),
+        "language": language if language else get_gen_default_language(),
+        "output_format": output_format,
+    }
+
+    with _batch_jobs_lock:
+        _batch_jobs[job_id] = {
+            "job_id": job_id,
+            "status": "queued",
+            "total": len(payloads),
+            "completed": 0,
+            "failed": [],
+            "current_filename": "",
+            "zip_filename": None,
+            "created_at": time.time(),
+            "error_detail": None,
+        }
+
+    thread = threading.Thread(
+        target=_run_batch_tts_job,
+        args=(job_id, payloads, params),
+        daemon=True,
+        name=f"batch-tts-{job_id}",
+    )
+    thread.start()
+    logger.info(f"Batch TTS job {job_id} started with {len(payloads)} file(s).")
+    return JSONResponse(
+        {"job_id": job_id, "total": len(payloads), "status": "queued"}
+    )
+
+
+@app.get(
+    "/api/batch_tts/status/{job_id}",
+    tags=["Batch TTS"],
+    summary="Poll progress of a batch TTS job",
+)
+async def batch_tts_status_endpoint(job_id: str):
+    """Returns {status, total, completed, failed, current_filename, zip_filename}."""
+    _purge_old_batch_jobs()
+    with _batch_jobs_lock:
+        job = _batch_jobs.get(job_id)
+        snapshot = dict(job) if job else None
+    if snapshot is None:
+        raise HTTPException(
+            status_code=404, detail="Batch job not found or expired."
+        )
+    return JSONResponse(
+        {
+            key: snapshot.get(key)
+            for key in (
+                "job_id",
+                "status",
+                "total",
+                "completed",
+                "failed",
+                "current_filename",
+                "zip_filename",
+                "error_detail",
+            )
+        }
+    )
+
+
+@app.get(
+    "/api/batch_tts/download/{job_id}",
+    tags=["Batch TTS"],
+    summary="Download the ZIP of a finished batch TTS job",
+)
+async def batch_tts_download_endpoint(job_id: str):
+    """Streams the ZIP containing one audio file per input .txt file."""
+    with _batch_jobs_lock:
+        job = _batch_jobs.get(job_id)
+        snapshot = dict(job) if job else None
+    if snapshot is None:
+        raise HTTPException(
+            status_code=404, detail="Batch job not found or expired."
+        )
+    if snapshot.get("status") != "done" or not snapshot.get("zip_filename"):
+        raise HTTPException(
+            status_code=409,
+            detail=f"Batch job is '{snapshot.get('status')}'; ZIP not ready yet.",
+        )
+    zip_path = _batch_job_dir(job_id) / str(snapshot["zip_filename"])
+    if not zip_path.is_file():
+        raise HTTPException(status_code=404, detail="ZIP file missing on server.")
+    return FileResponse(
+        str(zip_path),
+        media_type="application/zip",
+        filename=str(snapshot["zip_filename"]),
+    )
+
 
 @app.get("/v1/audio/voices", tags=["llama-swap Compatible"])
 # llama-swap, koboldcpp, and probably some more use this
