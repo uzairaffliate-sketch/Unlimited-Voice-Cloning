@@ -240,6 +240,13 @@
                 <div id="notification-area" class="mb-6"></div>
 
                 <div class="card">
+                    <!-- Mode Switcher: Single script vs Batch (.txt files -> ZIP) -->
+                    <div class="card__body" style="padding-bottom: 0;">
+                        <div class="gate-tabs mb-6" id="tts-mode-tabs" role="tablist">
+                            <button class="gate-tab active" data-mode="single" type="button">📝 Single Script</button>
+                            <button class="gate-tab" data-mode="batch" type="button">📦 Batch TTS <span class="form-hint">(.txt → ZIP)</span></button>
+                        </div>
+                    </div>
                     <form id="tts-form" action="#" method="post" onsubmit="return false;">
                         <div class="card__body">
                             <h2 id="tts-form-header" class="card__title">Generate Speech</h2>
@@ -552,6 +559,66 @@
                             <span class="form-hint ml-2">Resets settings to their defaults.</span>
                         </div>
                     </form>
+
+                    <!-- Batch TTS Panel: many pre-split .txt files -> one audio per file -> single ZIP -->
+                    <div id="batch-panel" class="card__body hidden">
+                        <h2 class="card__title">📦 Batch TTS</h2>
+                        <p class="form-hint mb-4">
+                            Apni pehle se split ki hui script ke <strong>.txt files</strong> upload karo.
+                            Har file ki <strong>alag audio</strong> banegi — same voice, same seed, same settings —
+                            aur sab ek <strong>.zip</strong> mein one-click download hogi.
+                            Audio ka naam wohi hoga jo .txt file ka tha, sirf extension badlegi
+                            (e.g. <em>part 1.txt → part 1.mp3</em>).
+                        </p>
+
+                        <div id="batch-settings-summary" class="highlight-box mb-4">
+                            <div class="highlight-box__row">
+                                <span id="batch-settings-text" class="form-hint">Voice: — • Seed: — • Format: —</span>
+                                <button id="batch-edit-settings-btn" type="button" class="btn ghost">⚙️ Change settings</button>
+                            </div>
+                        </div>
+
+                        <div id="batch-dropzone" class="batch-dropzone" role="button" tabindex="0"
+                            aria-label="Drop .txt files here or click to browse">
+                            <p class="batch-dropzone__title">📄 Drop .txt files here</p>
+                            <p class="form-hint">or</p>
+                            <button id="batch-browse-btn" type="button" class="btn secondary">Browse files…</button>
+                            <input type="file" id="batch-file-input" class="hidden" accept=".txt,text/plain" multiple>
+                        </div>
+
+                        <div id="batch-file-list-wrap" class="hidden mt-4">
+                            <div class="flex-row items-center gap-2">
+                                <h3 class="card__title" style="font-size:15px;">Selected files (<span id="batch-file-count">0</span>)</h3>
+                                <button id="batch-clear-btn" type="button" class="btn ghost">Clear</button>
+                            </div>
+                            <ul id="batch-file-list" class="batch-file-list"></ul>
+                        </div>
+
+                        <button id="batch-generate-btn" type="button" class="btn primary mt-4">🎙️ Generate Batch Audio</button>
+
+                        <div id="batch-progress-wrap" class="gen-progress-wrap hidden mt-4" aria-live="polite">
+                            <div class="gen-progress-bg">
+                                <div id="batch-progress-fill" class="gen-progress-fill" style="width:0%"></div>
+                            </div>
+                            <div class="gen-progress-meta">
+                                <span id="batch-progress-status">Starting…</span>
+                                <div class="gen-progress-right">
+                                    <span id="batch-progress-pct" class="gen-progress-pct">0%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="batch-done-wrap" class="hidden mt-4">
+                            <div class="highlight-box">
+                                <p id="batch-done-text" class="mb-2"></p>
+                                <a id="batch-download-btn" class="btn primary" href="#" download>⬇️ Download ZIP</a>
+                            </div>
+                            <div id="batch-failed-wrap" class="hidden mt-2">
+                                <h4 class="card__title" style="font-size:14px;color:#b91c1c;">⚠️ Failed files</h4>
+                                <ul id="batch-failed-list" class="batch-file-list"></ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="audio-player-container" class="mt-8"></div>
