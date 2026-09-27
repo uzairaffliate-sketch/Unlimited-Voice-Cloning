@@ -1571,6 +1571,276 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
     }
 
+    // =====================================================================
+    // Batch TTS: many .txt files -> one audio per file -> single ZIP
+    // =====================================================================
+    const ttsModeTabs = document.querySelectorAll('#tts-mode-tabs .gate-tab');
+    const batchPanel = document.getElementById('batch-panel');
+    const batchDropzone = document.getElementById('batch-dropzone');
+    const batchFileInput = document.getElementById('batch-file-input');
+    const batchBrowseBtn = document.getElementById('batch-browse-btn');
+    const batchFileListWrap = document.getElementById('batch-file-list-wrap');
+    const batchFileList = document.getElementById('batch-file-list');
+    const batchFileCount = document.getElementById('batch-file-count');
+    const batchClearBtn = document.getElementById('batch-clear-btn');
+    const batchGenerateBtn = document.getElementById('batch-generate-btn');
+    const batchProgressWrap = document.getElementById('batch-progress-wrap');
+    const batchProgressFill = document.getElementById('batch-progress-fill');
+    const batchProgressStatus = document.getElementById('batch-progress-status');
+    const batchProgressPct = document.getElementById('batch-progress-pct');
+    const batchDoneWrap = document.getElementById('batch-done-wrap');
+    const batchDoneText = document.getElementById('batch-done-text');
+    const batchDownloadBtn = document.getElementById('batch-download-btn');
+    const batchFailedWrap = document.getElementById('batch-failed-wrap');
+    const batchFailedList = document.getElementById('batch-failed-list');
+    const batchSettingsText = document.getElementById('batch-settings-text');
+    const batchEditSettingsBtn = document.getElementById('batch-edit-settings-btn');
+
+    let batchFiles = [];          // Array<File> — the selected .txt files
+    let batchPollTimer = null;
+    let batchJobRunning = false;
+
+    function describeCurrentVoice() {
+        if (currentVoiceMode === 'predefined') {
+            const v = predefinedVoiceSelect ? predefinedVoiceSelect.value : 'none';
+            return `Voice: ${v && v !== 'none' ? v : '(not selected)'}`;
+        }
+        if (currentVoiceMode === 'clone') {
+            const v = cloneReferenceSelect ? cloneReferenceSelect.value : 'none';
+            return `Clone ref: ${v && v !== 'none' ? v : '(not selected)'}`;
+        }
+        return 'Voice: (not selected)';
+    }
+
+    function refreshBatchSettingsSummary() {
+        if (!batchSettingsText) return;
+        const seed = seedInput ? seedInput.value : '0';
+        const fmt = outputFormatSelect ? (outputFormatSelect.value || 'mp3') : 'mp3';
+        batchSettingsText.textContent = `${describeCurrentVoice()} • Seed: ${seed} • Format: ${fmt} • Every file uses these same settings`;
+    }
+
+    function switchTtsMode(mode) {
+        ttsModeTabs.forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+        const isBatch = mode === 'batch';
+        if (ttsForm) ttsForm.classList.toggle('hidden', isBatch);
+        if (batchPanel) batchPanel.classList.toggle('hidden', !isBatch);
+        if (isBatch) refreshBatchSettingsSummary();
+    }
+
+    if (ttsModeTabs.length) {
+        ttsModeTabs.forEach(t => t.addEventListener('click', () => switchTtsMode(t.dataset.mode)));
+    }
+    if (batchEditSettingsBtn) {
+        batchEditSettingsBtn.addEventListener('click', () => switchTtsMode('single'));
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    function renderBatchFileList() {
+        if (!batchFileList) return;
+        batchFileList.innerHTML = '';
+        batchFiles.forEach(f => {
+            const li = document.createElement('li');
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = f.name;
+            const sizeSpan = document.createElement('span');
+            sizeSpan.className = 'batch-file-size';
+            sizeSpan.textContent = formatFileSize(f.size);
+            li.appendChild(nameSpan);
+            li.appendChild(sizeSpan);
+            batchFileList.appendChild(li);
+        });
+        if (batchFileCount) batchFileCount.textContent = batchFiles.length;
+        if (batchFileListWrap) batchFileListWrap.classList.toggle('hidden', batchFiles.length === 0);
+    }
+
+    function addBatchFiles(fileList) {
+        const incoming = Array.from(fileList || []).filter(f => /\.txt$/i.test(f.name));
+        const rejected = (fileList ? fileList.length : 0) - incoming.length;
+        if (rejected > 0) {
+            showNotification(`${rejected} non-.txt file(s) ignored. Only .txt files are accepted.`, 'warning');
+        }
+        // Dedupe by name+size so repeated drops don't duplicate
+        const seen = new Set(batchFiles.map(f => f.name + '|' + f.size));
+        incoming.forEach(f => {
+            const key = f.name + '|' + f.size;
+            if (!seen.has(key)) { seen.add(key); batchFiles.push(f); }
+        });
+        // Sort naturally so "part 2" comes before "part 10"
+        batchFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+        renderBatchFileList();
+        resetBatchResult();
+    }
+
+    function resetBatchResult() {
+        if (batchDoneWrap) batchDoneWrap.classList.add('hidden');
+        if (batchFailedWrap) batchFailedWrap.classList.add('hidden');
+        if (batchFailedList) batchFailedList.innerHTML = '';
+    }
+
+    function setBatchProgress(completed, total, currentName) {
+        const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+        if (batchProgressFill) batchProgressFill.style.width = pct + '%';
+        if (batchProgressPct) batchProgressPct.textContent = pct + '%';
+        if (batchProgressStatus) {
+            batchProgressStatus.textContent = currentName
+                ? `${completed}/${total} — ${currentName}`
+                : `${completed}/${total} files…`;
+        }
+    }
+
+    if (batchBrowseBtn && batchFileInput) {
+        batchBrowseBtn.addEventListener('click', (e) => { e.stopPropagation(); batchFileInput.click(); });
+    }
+    if (batchDropzone && batchFileInput) {
+        batchDropzone.addEventListener('click', (e) => {
+            if (e.target === batchBrowseBtn || batchBrowseBtn.contains(e.target)) return;
+            batchFileInput.click();
+        });
+        batchDropzone.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); batchFileInput.click(); }
+        });
+        ['dragenter', 'dragover'].forEach(ev => batchDropzone.addEventListener(ev, (e) => {
+            e.preventDefault(); batchDropzone.classList.add('batch-dropzone--dragover');
+        }));
+        ['dragleave', 'drop'].forEach(ev => batchDropzone.addEventListener(ev, (e) => {
+            e.preventDefault(); batchDropzone.classList.remove('batch-dropzone--dragover');
+        }));
+        batchDropzone.addEventListener('drop', (e) => {
+            if (e.dataTransfer && e.dataTransfer.files) addBatchFiles(e.dataTransfer.files);
+        });
+        batchFileInput.addEventListener('change', () => {
+            addBatchFiles(batchFileInput.files);
+            batchFileInput.value = ''; // allow re-selecting the same files
+        });
+    }
+    if (batchClearBtn) {
+        batchClearBtn.addEventListener('click', () => {
+            batchFiles = [];
+            renderBatchFileList();
+            resetBatchResult();
+        });
+    }
+
+    function stopBatchPolling() {
+        if (batchPollTimer) { clearInterval(batchPollTimer); batchPollTimer = null; }
+    }
+
+    async function pollBatchStatus(jobId) {
+        try {
+            const resp = await fetch(`${API_BASE_URL}/api/batch_tts/status/${jobId}`);
+            if (!resp.ok) throw new Error(`Status check failed (HTTP ${resp.status})`);
+            const st = await resp.json();
+            setBatchProgress(st.completed || 0, st.total || 0, st.current_filename || '');
+
+            if (st.status === 'done') {
+                stopBatchPolling();
+                batchJobRunning = false;
+                if (batchProgressWrap) batchProgressWrap.classList.add('hidden');
+                const okCount = (st.total || 0) - (st.failed ? st.failed.length : 0);
+                if (batchDoneText) {
+                    batchDoneText.innerHTML = `✅ Done! <strong>${okCount}</strong> audio file(s) generated` +
+                        (st.failed && st.failed.length ? `, <strong>${st.failed.length}</strong> failed` : '') +
+                        `. All packed in one ZIP — one click download:`;
+                }
+                if (batchDownloadBtn) {
+                    batchDownloadBtn.href = `${API_BASE_URL}/api/batch_tts/download/${jobId}`;
+                    batchDownloadBtn.setAttribute('download', st.zip_filename || 'batch_tts.zip');
+                }
+                if (st.failed && st.failed.length && batchFailedList) {
+                    batchFailedList.innerHTML = '';
+                    st.failed.forEach(f => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<span></span><span class="batch-file-size"></span>`;
+                        li.children[0].textContent = f.filename;
+                        li.children[1].textContent = f.error || 'failed';
+                        batchFailedList.appendChild(li);
+                    });
+                    if (batchFailedWrap) batchFailedWrap.classList.remove('hidden');
+                }
+                if (batchDoneWrap) {
+                    batchDoneWrap.classList.remove('hidden');
+                    batchDoneWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+                if (batchGenerateBtn) batchGenerateBtn.disabled = false;
+                showNotification('Batch TTS complete — your ZIP is ready!', 'success');
+            } else if (st.status === 'error') {
+                stopBatchPolling();
+                batchJobRunning = false;
+                if (batchProgressWrap) batchProgressWrap.classList.add('hidden');
+                if (batchGenerateBtn) batchGenerateBtn.disabled = false;
+                showNotification(`Batch TTS failed: ${st.error_detail || 'unknown error'}`, 'error');
+            }
+            // else: still queued/processing — keep polling
+        } catch (err) {
+            console.error('Batch status poll error:', err);
+            // Don't kill polling on a transient network blip; the next tick retries.
+        }
+    }
+
+    if (batchGenerateBtn) {
+        batchGenerateBtn.addEventListener('click', async () => {
+            if (batchJobRunning) {
+                showNotification('A batch job is already running.', 'warning');
+                return;
+            }
+            if (batchFiles.length === 0) {
+                showNotification('Please add some .txt files first.', 'error');
+                return;
+            }
+            if (currentVoiceMode === 'predefined' && (!predefinedVoiceSelect || predefinedVoiceSelect.value === 'none')) {
+                showNotification('Please select a predefined voice first (Single Script tab → Voice).', 'error');
+                return;
+            }
+            if (currentVoiceMode === 'clone' && (!cloneReferenceSelect || cloneReferenceSelect.value === 'none')) {
+                showNotification('Please select a clone reference audio first (Single Script tab → Voice).', 'error');
+                return;
+            }
+
+            resetBatchResult();
+            batchJobRunning = true;
+            batchGenerateBtn.disabled = true;
+            if (batchProgressWrap) batchProgressWrap.classList.remove('hidden');
+            setBatchProgress(0, batchFiles.length, '');
+
+            const fd = new FormData();
+            batchFiles.forEach(f => fd.append('files', f, f.name));
+            fd.append('voice_mode', currentVoiceMode);
+            if (currentVoiceMode === 'predefined') fd.append('predefined_voice_id', predefinedVoiceSelect.value);
+            if (currentVoiceMode === 'clone') fd.append('reference_audio_filename', cloneReferenceSelect.value);
+            fd.append('temperature', parseFloat(temperatureSlider.value));
+            fd.append('exaggeration', parseFloat(exaggerationSlider.value));
+            fd.append('cfg_weight', parseFloat(cfgWeightSlider.value));
+            fd.append('speed_factor', parseFloat(speedFactorSlider.value));
+            fd.append('seed', parseInt(seedInput.value, 10));
+            fd.append('language', languageSelect.value);
+            fd.append('output_format', outputFormatSelect.value || 'mp3');
+
+            try {
+                const resp = await fetch(`${API_BASE_URL}/api/batch_tts`, { method: 'POST', body: fd });
+                if (!resp.ok) {
+                    const errData = await resp.json().catch(() => ({ detail: `HTTP ${resp.status}` }));
+                    throw new Error(errData.detail || 'Failed to start batch job.');
+                }
+                const { job_id } = await resp.json();
+                showNotification(`Batch started: ${batchFiles.length} file(s). You can keep working — I'll notify when the ZIP is ready.`, 'info');
+                stopBatchPolling();
+                batchPollTimer = setInterval(() => pollBatchStatus(job_id), 2000);
+                pollBatchStatus(job_id);
+            } catch (err) {
+                console.error('Batch TTS start error:', err);
+                batchJobRunning = false;
+                batchGenerateBtn.disabled = false;
+                if (batchProgressWrap) batchProgressWrap.classList.add('hidden');
+                showNotification(err.message || 'Failed to start batch TTS.', 'error');
+            }
+        });
+    }
+
     // Call fetchInitialData at the end of setup to kick everything off.
     // Note: This calls initializeApplication internally.
     await fetchInitialData();
